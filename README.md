@@ -1,7 +1,7 @@
 Provisioner - A provision automation tool
 =========================================
 
-A simple script sync up remote a remote folder to local and exectue them.
+A simple script sync up remote a remote folder to local and exectues them automatically.
 
 It utilizes the sync/rsync features of awscli tool (for S3) and gsutil tool (for Google Storage), so any changes on remote folder can trigger the sync up and execution.
 It can be used for initial provisiong and auto-update for your server.
@@ -62,8 +62,10 @@ Useful options:
 ===============
 
 `--forever` enables it update forever. 
+
 `--interval` specifies the interval in seconds, aka how long does it sleeps between each sync.
 
+`--patterns` specifies the executable patterns in glob format, and only those match the patterns would be executed.
 
 Installation
 ============
