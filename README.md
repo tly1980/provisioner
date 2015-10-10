@@ -76,5 +76,12 @@ Running it
 
 If you want to use it for auto-update, consider use [supervisord](http://supervisord.org) or other daemon-lize tool with it.
 
+Security consideration
+======================
+
+It is your responsility to have your S3 / GS secret secured. If other people hack in to your cloud bucket, they can ingests trojans to your box.
+
+Strongly suggest you go through the code and make sure that I haven't place any trojans to it.
+
 
 PS: Google storage support is coming up.
