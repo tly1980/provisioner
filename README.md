@@ -38,7 +38,7 @@ And if you run
 provisioner.py s3://my_bucket/a a
 ```
 
-It would be downloading those files to a and execute them in alphabetical order.
+It would be download those files to local folder `a` and execute them in alphabetical order.
 ```
 provisioner.py s3://my_bucket/a a
 2015-10-10 17:37   sync   INFO   syncing start
