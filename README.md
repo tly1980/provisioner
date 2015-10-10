@@ -61,8 +61,8 @@ python haha
 Useful options:
 ===============
 
-```--forever``` enables it update forever. 
-```--interval``` specifies the interval in seconds.
+`--forever` enables it update forever. 
+`--interval` specifies the interval in seconds, aka how long does it sleeps between each sync.
 
 
 Installation
