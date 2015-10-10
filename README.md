@@ -1,6 +1,78 @@
 Provisioner - A provision automation tool
 =========================================
 
-It downloads remote script to your local and exectue them.
+A simple script sync up remote a remote folder to local and exectue them.
 
-It utilizes awscli (for S3) and gsutils (for google storage),
+It utilizes the sync/rsync features of awscli tool (for S3) and gsutil tool (for Google Storage),
+
+so any changes on remote folder can trigger the sync up and execution.
+
+It can be used for initial provisiong and auto-update for your server.
+
+
+Example, supposed you have a S3 bucket named "my_bucket" with following folder structure.
+
+```
+s3://my_bucket/
+	a/
+		run.sh
+		run1.py
+```
+
+run.sh 
+
+```bash
+#!/bin/bash
+
+echo "haha"
+```
+
+run1.py
+
+```python
+#!/usr/bin/env python
+
+print "python haha"
+```
+
+And if you run
+
+```
+provisioner.py s3://my_bucket/a a
+```
+
+It would be downloading those files to a and execute them in alphabetical order.
+
+```
+provisioner.py s3://my_bucket/a a
+2015-10-10 17:37   sync   INFO   syncing start
+2015-10-10 17:37   sync   INFO   sh_call: aws s3 sync s3://my_bucket/a /Users/me/a  --delete
+download: s3://my_bucket/a/run1.py to a/run1.py
+download: s3://my_bucket/a/run.sh to a/run.sh
+
+2015-10-10 17:37   sync   INFO   searching trigger on /Users/me/a with pattern: ['*run*.py', '*run*.sh']
+2015-10-10 17:37   sync   INFO   sh_call: chmod u+x /Users/me/a/run.sh
+2015-10-10 17:37   sync   INFO   sh_call: /Users/me/a/run.sh
+haha
+
+2015-10-10 17:37   sync   INFO   sh_call: chmod u+x /Users/me/a/run1.py
+2015-10-10 17:37   sync   INFO   sh_call: /Users/me/a/run1.py
+python haha
+
+2015-10-10 17:37   sync   INFO   sync finished [s3://my_bucket/a => a]
+```
+
+Useful options:
+===============
+
+```--forever``` enables it update forever. 
+```--interval``` specifies the interval in seconds.
+
+
+Installation
+============
+
+Just donwload the provisioner.p
+
+
+PS: Google storage support is coming up.
