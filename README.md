@@ -1,14 +1,12 @@
-Provisioner - A provision automation tool
-=========================================
+# Provisioner - A provision automation tool
+
 
 A simple script sync up remote a remote folder to local and exectues them automatically.
 
 It utilizes the sync/rsync features of awscli tool (for S3) and gsutil tool (for Google Storage), so any changes on remote folder can trigger the sync up and execution.
 It can be used for initial provisiong and auto-update for your server.
 
-Example
-=======
-
+## Example
 supposed you have a S3 bucket named "my_bucket" with following folder structure.
 
 ```
@@ -58,8 +56,7 @@ python haha
 2015-10-10 17:37   sync   INFO   sync finished [s3://my_bucket/a => a]
 ```
 
-Useful options:
-===============
+## Useful options:
 
 `--forever` enables it update forever. 
 
@@ -67,21 +64,20 @@ Useful options:
 
 `--patterns` specifies the executable patterns in glob format, and only those match the patterns would be executed.
 
-Installation
-============
+## Installation
+
 Just donwload the provisioner.py and place it /usr/bin or whatever make sense to you.
 
-Running it
-==========
+## Running it
+
 
 If you want to use it for auto-update, consider use [supervisord](http://supervisord.org) or other daemon-lize tool with it.
 
-Security consideration
-======================
+## Security consideration
 
 It is your responsility to have your S3 / GS secret secured. If other people hack in to your cloud bucket, they can ingests trojans to your box.
 
 Strongly suggest you go through the code and make sure that I haven't place any trojans to it.
 
 
-PS: Google storage support is coming up.
+
