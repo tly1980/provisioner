@@ -67,7 +67,7 @@ def sh_call(cmd, shell=True, verbose=True):
         logger.info("sh_call: %s" % cmd)
         txt = subprocess.check_output(cmd, shell=shell)
         if verbose and txt:
-            print >> sys.stderr, txt
+            print txt
         return txt, 0
     except subprocess.CalledProcessError, e:
         logger.error("failed@ : %s" % cmd, exc_info=True)
