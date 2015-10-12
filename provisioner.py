@@ -31,6 +31,8 @@ import argparse
 import sys
 import fnmatch
 import time
+import datetime
+import json
 
 AP = argparse.ArgumentParser("provisioner", description="""Auto-provisioning tool.
 Sync a remote folder to local,
@@ -46,12 +48,18 @@ AP.add_argument("--forever", default=False, action="store_true",
 AP.add_argument("--interval", default=15, type=int, 
     help="interval between each watch. Default is 15 seconds")
 
+AP.add_argument("--state", default="/var/run/provisioner_state.json", type=str, 
+    help="location to save state")
+
 
 logging.basicConfig(level=logging.INFO,
         format='%(asctime)-18s %(name)-6s %(levelname)-6s %(message)s',
         datefmt='%Y-%m-%d %H:%M')
 
 logger = logging.getLogger("sync")
+
+STATE = {}
+STATE_PATH = ''
 
 
 def sh_call(cmd, shell=True, verbose=True):
@@ -71,9 +79,36 @@ def has_change(txt):
             return True
     return False
 
+def load_state(path):
+    global STATE
+    logger.info("loading state from %s", path)
+    try:
+        if os.path.exists(path):
+            with open(path, "rb") as f:
+                STATE = json.load(f)
+    except Exception, e:
+        logger.exception("Failed to load state from %s", path)
+    return STATE
+
+def persist_state(path):
+    logger.info("persisting state to %s", path)
+    with open(path, "wb") as f:
+        json.dump(STATE, f, indent=2)
+
+def file_checksum(path):
+    txt, ret = sh_call("shasum %s" % path)
+    if txt:
+        return txt.split(" ")[0]
+    return None
+
 def main(args):
+    global STATE_PATH
     src = args.cloud_src
     dst = os.path.abspath(args.dst)
+    STATE_PATH = args.state
+    load_state(STATE_PATH)
+
+    is_s3 = True if src.startswith("s3://") else False
 
     if dst.startswith("s3://") or dst.startswith("gs://"):
         sys.exit("dst has to be local.", -1)
@@ -102,11 +137,19 @@ def main(args):
             # test if it is last run, and fail fast
             if not args.forever:
                 sys.exit(retcode)
-        if txt:
-            if has_change(txt):
+        all_good = True
+        if is_s3:
+            if txt and has_change(txt):
                 all_good = trigger(dst, args.patterns)
                 if not all_good:
                     logger.warn("Error on executing triggers [location=%s]", args.dst)
+        else:
+            # As gs doesn't output to stdio for now
+            # we just assume that it needs to run the trigger all the time
+            all_good = trigger(dst, args.patterns)
+            if not all_good:
+                logger.warn("Error on executing triggers [location=%s]", args.dst)
+
         if not args.forever:
             break
         logger.info("sleep %s secs ...", args.interval)
@@ -119,6 +162,24 @@ def match(fname, patterns):
         if fnmatch.fnmatch(fname, p):
             return True
     return False
+
+def can_run(fname, checksum):
+    exe = STATE.setdefault('executed', {})
+
+    if fname not in exe:
+        return True
+
+    if exe[fname]['checksum'] != checksum:
+        return True
+
+    return False
+
+def set_ran(fname, checksum):
+    exe = STATE.setdefault('executed', {})
+    exe[fname] = {'checksum': checksum, 'timestamp': str(datetime.datetime.now())}
+
+    persist_state(STATE_PATH)
+
 
 def trigger(dst, patterns):
     current_dir = os.path.abspath(os.getcwd())
@@ -136,10 +197,17 @@ def trigger(dst, patterns):
         for f in files2:
             cmd = os.path.join(current_dir, root, f)
             if match(f, patterns):
-                sh_call("chmod u+x %s" % cmd)
-                txt, retcode = sh_call(cmd)
-                if retcode != 0:
-                    all_good = False
+                checksum = file_checksum(f)
+                if can_run(f, checksum):
+                    sh_call("chmod u+x %s" % cmd)
+                    # set ran regardless 
+                    # the script is ran successfully or not
+                    set_ran(f, checksum)
+                    txt, retcode = sh_call(cmd)
+                    if retcode != 0:
+                        all_good = False
+                else:
+                    logger.info("skipping [%s] as it was already executed.", f)
     # change back
     os.chdir(current_dir)
     return all_good
