@@ -54,10 +54,14 @@ logging.basicConfig(level=logging.INFO,
 logger = logging.getLogger("sync")
 
 
-def sh_call(cmd, shell=True, verbose=True):
+def sh_call(cmd, shell=True, verbose=True, rd_stderr=False):
     try:
         logger.info("sh_call: %s" % cmd)
-        txt = subprocess.check_output(cmd, shell=shell)
+        if not rd_stderr:
+            txt = subprocess.check_output(cmd, shell=shell)
+        else:
+            txt = subprocess.check_output(cmd,
+                shell=shell, stderr=subprocess.STDOUT)
         if verbose and txt:
             print >> sys.stderr, txt
         return txt, 0
@@ -81,11 +85,13 @@ def main(args):
     if not os.path.exists(dst):
         os.makedirs(dst, 0700)
 
+    rd_stderr=False
     if src.startswith("s3://"):
         sync_cmd="aws s3 sync {src} {dst}  --delete".format(
             src=src, dst=dst)
 
     elif src.startswith("gs://"):
+        rd_stderr=True
         sync_cmd="gsutil rsync -d {src} {dst}".format(
             src=src, dst=dst)
     else:
@@ -96,7 +102,7 @@ def main(args):
         i += 1
         logger.info("syncing start")
 
-        txt, retcode = sh_call(sync_cmd)
+        txt, retcode = sh_call(sync_cmd, rd_stderr=rd_stderr)
         if retcode != 0:
             logger.warn("remote sync failed")
             # test if it is last run, and fail fast
